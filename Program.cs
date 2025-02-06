@@ -12,7 +12,20 @@ var codingKernel = resourceCreator.CreateCodingKernel();
 
 
 Console.WriteLine("- Create Coding Agent");
-var codingAssistant = resourceCreator.CreateOpenAIChatAgent(openAIClient, "coder", "you can write code to resolve a task");
+var codingAssistant = resourceCreator.CreateOpenAIChatAgent(
+        openAIClient, 
+        "coder",
+        """
+            You can write code to resolve a task. Just write a codeblock and nothing more. 
+            You'll write Python code by default unless C# or dotnet is asked.
+
+            Try to minimize dependencies on libraries, but you can use pygame.
+
+            #IMPORTANT! 
+            When using pygame, make sure the last line of code is pygame.quit() and not quit()
+            
+        """);
+        
 Console.WriteLine("- Create Groupchat Admin");
 var groupChatAdmin = resourceCreator.CreateOpenAIChatAgent(openAIClient, "groupadmin", "you manage the groupchat");
 Console.WriteLine("- Create Code Executor Agent");
@@ -31,6 +44,7 @@ if (task.ToLower().Contains("exit"))
     return;
 }
 
+
 var groupChat = new GroupChat(
     admin: groupChatAdmin,
     members: [
@@ -38,6 +52,9 @@ var groupChat = new GroupChat(
         codeExecutor, 
         userProxy
     ]);
+
+codingAssistant.SendIntroduction("I will write code to resolve a task, but cannot run it", groupChat);
+codeExecutor.SendIntroduction("I can run .NET and Python code", groupChat);
 
 var chatHistory = new List<IMessage>
         {

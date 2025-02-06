@@ -9,12 +9,6 @@ using Azure.Identity;
 using dotenv.net;
 using Microsoft.DotNet.Interactive;
 using OpenAI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Management.Automation;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DevTeamDemo.Resources;
 
