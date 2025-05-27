@@ -4,6 +4,7 @@ using AutoGen.DotnetInteractive;
 using AutoGen.DotnetInteractive.Extension;
 using AutoGen.OpenAI;
 using AutoGen.OpenAI.Extension;
+using Azure;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using dotenv.net;
@@ -17,12 +18,14 @@ public class ResourceCreator
 
     private Uri _azureOpenAIEndpoint;
     private string _azureOpenAIDeploymentName;
+    private string _azureOpenAIkey;
 
     public ResourceCreator()
     {
         DotEnv.Load();
         _azureOpenAIEndpoint = new Uri(Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT"));
         _azureOpenAIDeploymentName = Environment.GetEnvironmentVariable("AZURE_OPENAI_DEPLOYMENT_NAME");
+        _azureOpenAIkey = Environment.GetEnvironmentVariable("AZURE_OPENAI_KEY");
 
     }
 
@@ -30,7 +33,7 @@ public class ResourceCreator
     {
         var openAIClient = new AzureOpenAIClient(
             _azureOpenAIEndpoint,
-            new AzureCliCredential()
+            new AzureKeyCredential(_azureOpenAIkey)
             );
         return openAIClient;
     }

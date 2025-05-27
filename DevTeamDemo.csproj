@@ -8,12 +8,12 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AutoGen" Version="0.2.2-dev.20250206.1" />
+		<PackageReference Include="AutoGen" Version="0.2.3" />
 		<PackageReference Include="dotenv.net" Version="3.2.1" />
-		<PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" />
-		<PackageReference Include="Azure.Identity" Version="1.13.2" />
-		<PackageReference Include="AutoGen.DotnetInteractive" Version="0.2.2-dev.20250206.1" />
-		<PackageReference Include="AutoGen.OpenAI" Version="0.2.2-dev.20250206.1" />
+		<PackageReference Include="Azure.AI.OpenAI" Version="2.2.0-beta.4" />
+		<PackageReference Include="Azure.Identity" Version="1.14.0" />
+		<PackageReference Include="AutoGen.DotnetInteractive" Version="0.2.3" />
+		<PackageReference Include="AutoGen.OpenAI" Version="0.2.3" />
 	</ItemGroup>
 
 	<ItemGroup>
