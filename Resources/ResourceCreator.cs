@@ -29,6 +29,8 @@ public class ResourceCreator
 
     }
 
+        
+
     public OpenAIClient CreateOpenAIClient()
     {
         var openAIClient = new AzureOpenAIClient(
@@ -74,59 +76,79 @@ public class ResourceCreator
     public MiddlewareAgent<DefaultReplyAgent> CreateCodeExecutorAgent(CompositeKernel kernel)
     {
         var runner = new DefaultReplyAgent(
-        name: "runner",
-        defaultReply: "No code available, coder, write code please")
+            name: "runner",
+            defaultReply: "No code available, coder, write code please")
         .RegisterMiddleware(async (msgs, option, agent, ct) =>
         {
-            var mostRecentCoderMessage = msgs.LastOrDefault(x => x.From == "coder") ?? throw new Exception("No coder message found");
-
-            if (mostRecentCoderMessage.GetContent().Contains("```csharp"))
+            var mostRecentCoderMessage = msgs.LastOrDefault(x => x.From == "developer");
+            if (mostRecentCoderMessage == null)
             {
+                // No coder message found, fallback to default reply
+                return await agent.GenerateReplyAsync(msgs, option, ct);
+            }
 
-                if (mostRecentCoderMessage.ExtractCodeBlock("```csharp", "```") is string code)
+            string content = mostRecentCoderMessage.GetContent();
+
+            // Helper function to extract and run code asynchronously
+            async Task<TextMessage> TryExecuteCodeAsync(string languageTag, string kernelName)
+            {
+                var codeBlock = mostRecentCoderMessage.ExtractCodeBlock(languageTag, "```");
+                if (string.IsNullOrWhiteSpace(codeBlock))
                 {
-                    var result = await kernel.RunSubmitCodeCommandAsync(code, "csharp2");
-                    // only keep the first 500 characters
-                    if (result.Length > 10000)
-                    {
-                        result = result.Substring(0, 10000);
-                    }
-                    result = $"""
-                    # [CODE_BLOCK_EXECUTION_RESULT]
-                    {result}
-                    """;
+                    return null;
+                }
 
-                    return new TextMessage(Role.Assistant, result, from: agent.Name);
+                try
+                {
+                    // Run the code asynchronously on the kernel for the correct language
+                    var result = await kernel.RunSubmitCodeCommandAsync(codeBlock, kernelName);
+
+                    // Limit output length
+                    if (result?.Length > 10000)
+                        result = result.Substring(0, 10000);
+
+                    var output = $"""
+                # [CODE_BLOCK_EXECUTION_RESULT]
+                {result}
+                """;
+
+                    return new TextMessage(Role.Assistant, output, from: agent.Name);
+                }
+                catch (Exception ex)
+                {
+                    // Handle exception without crashing, inform user
+                    var errorMsg = $"""
+                # [CODE_EXECUTION_ERROR]
+                {ex.Message}
+                """;
+                    return new TextMessage(Role.Assistant, errorMsg, from: agent.Name);
                 }
             }
 
-            if (mostRecentCoderMessage.GetContent().Contains("```python"))
+            TextMessage reply = null;
+
+            if (content.Contains("```csharp"))
             {
-
-                if (mostRecentCoderMessage.ExtractCodeBlock("```python", "```") is string code)
-                {
-                    var result = await kernel.RunSubmitCodeCommandAsync(code, "python");
-                    // only keep the first 500 characters
-                    if (result.Length > 10000)
-                    {
-                        result = result.Substring(0, 10000);
-                    }
-                    result = $"""
-                    # [CODE_BLOCK_EXECUTION_RESULT]
-                    {result}
-                    """;
-
-                    return new TextMessage(Role.Assistant, result, from: agent.Name);
-                }
+                reply = await TryExecuteCodeAsync("```csharp", "csharp2");
+            }
+            else if (content.Contains("```python"))
+            {
+                reply = await TryExecuteCodeAsync("```python", "python");
             }
 
+            if (reply != null)
+            {
+                return reply;
+            }
+
+            // No code block matched, fallback to default behavior
             return await agent.GenerateReplyAsync(msgs, option, ct);
 
         })
         .RegisterPrintMessage();
-        
-        return runner;
 
-    }  
+        return runner;
+    }
+
 
 }
